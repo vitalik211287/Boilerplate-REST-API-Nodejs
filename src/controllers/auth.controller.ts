@@ -1,9 +1,8 @@
 // import { Router } from "express";
 import { Request, Response } from "express";
-// import { PrismaClient } from "../generated/prisma/client.ts";
 import prisma from "../../prisma/client.ts";
 import type { RegisterBody } from "../validators/auth.validators.ts";
-// const prisma = new PrismaClient();
+import bcrypt from "bcrypt";
 
 const registerUser = async (
   req: Request<{}, {}, RegisterBody>,
