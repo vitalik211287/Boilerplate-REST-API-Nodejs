@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate } from "../middlewares/authenticate.js";
 
 import {
   getAllAnnouncements,
@@ -14,10 +15,10 @@ announcementsRouter.get("/", getAllAnnouncements);
 
 announcementsRouter.get("/:id", getAnnouncementById);
 
-announcementsRouter.post("/", createAnnouncement);
+announcementsRouter.post("/", authenticate, createAnnouncement);
 
-announcementsRouter.patch("/:id", updateAnnouncement);
+announcementsRouter.patch("/:id", authenticate, updateAnnouncement);
 
-announcementsRouter.delete("/:id", deleteAnnouncement);
+announcementsRouter.delete("/:id", authenticate, deleteAnnouncement);
 
 export default announcementsRouter;
