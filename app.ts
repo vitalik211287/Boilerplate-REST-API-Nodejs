@@ -4,12 +4,29 @@ import swaggerUi from "swagger-ui-express";
 import cookieParser from "cookie-parser";
 
 import { generateOpenApiDocument } from "./src/openapi.ts";
+import authRouter from "./src/routes/auth.routes.js";
+import announcementsRouter from "./src/routes/announcements.routes.js";
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+
+app.use((req, _res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
+
+app.get("/test", (_req, res) => {
+  console.log("APP TEST WORKED");
+  res.send("APP WORKS");
+});
+
+app.use("/announcements", announcementsRouter);
+app.use("/auth", authRouter);
+
 const openApiDocument = generateOpenApiDocument();
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 // 404 Not Found handler - must be after all routes
@@ -31,26 +48,37 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   }
 
   if (err.status && err.status >= 400 && err.status < 500) {
-    return res.status(err.status).json({ error: err.message });
+    return res.status(err.status).json({
+      error: err.message,
+    });
   }
 
   if (err.code === "P2025") {
-    return res.status(404).json({ error: "Resource not found" });
+    return res.status(404).json({
+      error: "Resource not found",
+    });
   }
 
   if (err.code === "P2002") {
-    return res.status(409).json({ error: "Unique constraint violation" });
+    return res.status(409).json({
+      error: "Unique constraint violation",
+    });
   }
 
   if (err.code === "P2003") {
-    return res.status(400).json({ error: "Foreign key constraint failed" });
+    return res.status(400).json({
+      error: "Foreign key constraint failed",
+    });
   }
 
-  res.status(500).json({ error: "Internal server error" });
+  res.status(500).json({
+    error: "Internal server error",
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 
+// const PORT = 3001;
 app.listen(PORT, () => {
   console.log(
     `Server is running on port ${PORT}: http://localhost:${PORT}/api-docs`,
