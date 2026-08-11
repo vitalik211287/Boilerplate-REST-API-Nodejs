@@ -1,17 +1,32 @@
 import { Router } from "express";
-import { validateBody } from "../middlewares/validateBody.ts";
-import { registerSchema } from "../validators/auth.validators.ts";
-import { registerUser } from "../controllers/auth.controller.ts";
 
-// console.log("AUTH ROUTER LOADED");
+import { validateBody } from "../middlewares/validateBody.ts";
+import { authenticate } from "../middlewares/authenticate.ts";
+
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+} from "../validators/auth.validators.ts";
+
+import {
+  registerUser,
+  loginUser,
+  refreshUser,
+  logoutUser,
+  getMe,
+} from "../controllers/auth.controller.ts";
 
 const authRouter = Router();
 
-authRouter.get("/", async (req, res) => {
-  console.log("GET /auth WORKED");
-  res.send("User logged in");
-});
-
 authRouter.post("/register", validateBody(registerSchema), registerUser);
+
+authRouter.post("/login", validateBody(loginSchema), loginUser);
+
+authRouter.post("/refresh", validateBody(refreshSchema), refreshUser);
+
+authRouter.post("/logout", authenticate, logoutUser);
+
+authRouter.get("/me", authenticate, getMe);
 
 export default authRouter;

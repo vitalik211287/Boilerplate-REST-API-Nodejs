@@ -4,7 +4,6 @@ import type { RegisterBody } from "../validators/auth.validators.ts";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-
 // REGISTER
 const registerUser = async (
   req: Request<{}, {}, RegisterBody>,
@@ -31,7 +30,6 @@ const registerUser = async (
   });
 };
 
-
 // LOGIN
 const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
@@ -48,10 +46,7 @@ const loginUser = async (req: Request, res: Response) => {
     });
   }
 
-  const passwordIsValid = await bcrypt.compare(
-    password,
-    user.password,
-  );
+  const passwordIsValid = await bcrypt.compare(password, user.password);
 
   if (!passwordIsValid) {
     return res.status(401).json({
@@ -92,7 +87,6 @@ const loginUser = async (req: Request, res: Response) => {
   });
 };
 
-
 // REFRESH
 const refreshUser = async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
@@ -110,10 +104,7 @@ const refreshUser = async (req: Request, res: Response) => {
   }
 
   try {
-    const payload = jwt.verify(
-      refreshToken,
-      process.env.JWT_SECRET!,
-    );
+    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET!);
 
     if (typeof payload === "string" || !payload.sub) {
       return res.status(401).json({
@@ -141,9 +132,41 @@ const refreshUser = async (req: Request, res: Response) => {
   }
 };
 
+const logoutUser = async (req: Request, res: Response) => {
+  const userId = Number(req.user?.sub);
 
-export {
-  registerUser,
-  loginUser,
-  refreshUser,
+  await prisma.refreshToken.deleteMany({
+    where: {
+      userId,
+    },
+  });
+
+  res.status(204).end();
 };
+
+const getMe = async (req: Request, res: Response) => {
+  const userId = Number(req.user?.sub);
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      name: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      error: "User not found",
+    });
+  }
+
+  res.status(200).json(user);
+};
+
+export { registerUser, loginUser, refreshUser, logoutUser, getMe };
