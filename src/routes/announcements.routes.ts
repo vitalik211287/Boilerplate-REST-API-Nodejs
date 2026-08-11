@@ -1,14 +1,23 @@
-import {Router} from "express";
+import { Router } from "express";
 
-const announcementsRouter = Router(); 
+import {
+  getAllAnnouncements,
+  getAnnouncementById,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from "../controllers/announcements.controller.js";
 
-announcementsRouter.get("/",(req, res)=> {
-  // Logic to get all announcements
-  res.send("Get all announcements");
-}       );
-// announcementsRouter.get("/:id", ...);
-// announcementsRouter.post("/", ...);
-// announcementsRouter.patch("/:id", ...);
-// announcementsRouter.delete("/:id", ...);
+const announcementsRouter = Router();
+
+announcementsRouter.get("/", getAllAnnouncements);
+
+announcementsRouter.get("/:id", getAnnouncementById);
+
+announcementsRouter.post("/", createAnnouncement);
+
+announcementsRouter.patch("/:id", updateAnnouncement);
+
+announcementsRouter.delete("/:id", deleteAnnouncement);
 
 export default announcementsRouter;
