@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { authenticate } from "../middlewares/authenticate.js";
+import { authenticate } from "../middlewares/authenticate.ts";
 
-import { validateBody } from "../middlewares/validateBody.js";
-import { validateParams } from "../middlewares/validateParams.js";
-import { validateQuery } from "../middlewares/validateQuery.js";
+import { validateBody } from "../middlewares/validateBody.ts";
+import { validateParams } from "../middlewares/validateParams.ts";
+import { validateQuery } from "../middlewares/validateQuery.ts";
 
 import {
   getAllAnnouncements,
@@ -11,14 +11,14 @@ import {
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement,
-} from "../controllers/announcements.controller.js";
+} from "../controllers/announcements.controller.ts";
 
 import {
   createAnnouncementSchema,
   updateAnnouncementSchema,
-  announcementIdSchema,
+  announcementParamsSchema,
   announcementsQuerySchema,
-} from "../validators/announcements.validators.js";
+} from "../validators/announcements.validators.ts";
 
 const announcementsRouter = Router();
 
@@ -32,7 +32,7 @@ announcementsRouter.get(
 // Перевіряємо :id
 announcementsRouter.get(
   "/:id",
-  validateParams(announcementIdSchema),
+  validateParams(announcementParamsSchema),
   getAnnouncementById,
 );
 
@@ -48,7 +48,7 @@ announcementsRouter.post(
 announcementsRouter.patch(
   "/:id",
   authenticate,
-  validateParams(announcementIdSchema),
+  validateParams(announcementParamsSchema),
   validateBody(updateAnnouncementSchema),
   updateAnnouncement,
 );
@@ -57,7 +57,7 @@ announcementsRouter.patch(
 announcementsRouter.delete(
   "/:id",
   authenticate,
-  validateParams(announcementIdSchema),
+  validateParams(announcementParamsSchema),
   deleteAnnouncement,
 );
 
