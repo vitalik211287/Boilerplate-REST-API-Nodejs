@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/authenticate.js";
 
+import { validateBody } from "../middlewares/validateBody.js";
+import { validateParams } from "../middlewares/validateParams.js";
+import { validateQuery } from "../middlewares/validateQuery.js";
+
 import {
   getAllAnnouncements,
   getAnnouncementById,
@@ -9,16 +13,52 @@ import {
   deleteAnnouncement,
 } from "../controllers/announcements.controller.js";
 
+import {
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+  announcementIdSchema,
+  announcementsQuerySchema,
+} from "../validators/announcements.validators.js";
+
 const announcementsRouter = Router();
 
-announcementsRouter.get("/", getAllAnnouncements);
+// Перевіряємо ?page=...&search=...&sort=...
+announcementsRouter.get(
+  "/",
+  validateQuery(announcementsQuerySchema),
+  getAllAnnouncements,
+);
 
-announcementsRouter.get("/:id", getAnnouncementById);
+// Перевіряємо :id
+announcementsRouter.get(
+  "/:id",
+  validateParams(announcementIdSchema),
+  getAnnouncementById,
+);
 
-announcementsRouter.post("/", authenticate, createAnnouncement);
+// Перевіряємо токен + body
+announcementsRouter.post(
+  "/",
+  authenticate,
+  validateBody(createAnnouncementSchema),
+  createAnnouncement,
+);
 
-announcementsRouter.patch("/:id", authenticate, updateAnnouncement);
+// Перевіряємо токен + :id + body
+announcementsRouter.patch(
+  "/:id",
+  authenticate,
+  validateParams(announcementIdSchema),
+  validateBody(updateAnnouncementSchema),
+  updateAnnouncement,
+);
 
-announcementsRouter.delete("/:id", authenticate, deleteAnnouncement);
+// Перевіряємо токен + :id
+announcementsRouter.delete(
+  "/:id",
+  authenticate,
+  validateParams(announcementIdSchema),
+  deleteAnnouncement,
+);
 
 export default announcementsRouter;
