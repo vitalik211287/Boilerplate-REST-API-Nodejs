@@ -4,12 +4,28 @@ import type { RegisterBody } from "../validators/auth.validators.ts";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+
 // REGISTER
 const registerUser = async (
   req: Request<{}, {}, RegisterBody>,
   res: Response,
 ) => {
   const { username, email, password, name } = req.body;
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username },
+        { email },
+      ],
+    },
+  });
+
+  if (existingUser) {
+    return res.status(409).json({
+      error: "Username or email already taken",
+    });
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -22,16 +38,51 @@ const registerUser = async (
     },
   });
 
+  const accessToken = jwt.sign(
+    {
+      sub: newUser.id,
+    },
+    process.env.JWT_SECRET!,
+    {
+      expiresIn: "15m",
+    },
+  );
+
+  const refreshToken = jwt.sign(
+    {
+      sub: newUser.id,
+    },
+    process.env.JWT_SECRET!,
+    {
+      expiresIn: "7d",
+    },
+  );
+
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: newUser.id,
+    },
+  });
+
   res.status(201).json({
-    id: newUser.id,
-    username: newUser.username,
-    email: newUser.email,
-    name: newUser.name,
+    user: {
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      name: newUser.name,
+    },
+    accessToken,
+    refreshToken,
   });
 };
 
+
 // LOGIN
-const loginUser = async (req: Request, res: Response) => {
+const loginUser = async (
+  req: Request,
+  res: Response,
+) => {
   const { username, password } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -42,15 +93,18 @@ const loginUser = async (req: Request, res: Response) => {
 
   if (!user) {
     return res.status(401).json({
-      error: "Invalid username or password",
+      error: "Invalid credentials",
     });
   }
 
-  const passwordIsValid = await bcrypt.compare(password, user.password);
+  const passwordIsValid = await bcrypt.compare(
+    password,
+    user.password,
+  );
 
   if (!passwordIsValid) {
     return res.status(401).json({
-      error: "Invalid username or password",
+      error: "Invalid credentials",
     });
   }
 
@@ -74,6 +128,14 @@ const loginUser = async (req: Request, res: Response) => {
     },
   );
 
+  // Видаляємо старий refresh token
+  await prisma.refreshToken.deleteMany({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  // Записуємо новий
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
@@ -82,29 +144,30 @@ const loginUser = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+    },
     accessToken,
     refreshToken,
   });
 };
 
+
 // REFRESH
-const refreshUser = async (req: Request, res: Response) => {
+const refreshUser = async (
+  req: Request,
+  res: Response,
+) => {
   const { refreshToken } = req.body;
 
-  const tokenFromDb = await prisma.refreshToken.findUnique({
-    where: {
-      token: refreshToken,
-    },
-  });
-
-  if (!tokenFromDb) {
-    return res.status(401).json({
-      error: "Invalid refresh token",
-    });
-  }
-
   try {
-    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET!);
+    const payload = jwt.verify(
+      refreshToken,
+      process.env.JWT_SECRET!,
+    );
 
     if (typeof payload === "string" || !payload.sub) {
       return res.status(401).json({
@@ -112,9 +175,23 @@ const refreshUser = async (req: Request, res: Response) => {
       });
     }
 
-    const accessToken = jwt.sign(
+    const oldToken = await prisma.refreshToken.findUnique({
+      where: {
+        token: refreshToken,
+      },
+    });
+
+    if (!oldToken) {
+      return res.status(401).json({
+        error: "Invalid refresh token",
+      });
+    }
+
+    const userId = Number(payload.sub);
+
+    const newAccessToken = jwt.sign(
       {
-        sub: payload.sub,
+        sub: userId,
       },
       process.env.JWT_SECRET!,
       {
@@ -122,17 +199,49 @@ const refreshUser = async (req: Request, res: Response) => {
       },
     );
 
+    const newRefreshToken = jwt.sign(
+      {
+        sub: userId,
+      },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "7d",
+      },
+    );
+
+    // Token rotation:
+    // видаляємо старий refresh token
+    await prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+      },
+    });
+
+    // записуємо новий refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId,
+      },
+    });
+
     res.status(200).json({
-      accessToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     });
   } catch {
     return res.status(401).json({
-      error: "Invalid or expired refresh token",
+      error: "Invalid refresh token",
     });
   }
 };
 
-const logoutUser = async (req: Request, res: Response) => {
+
+// LOGOUT
+const logoutUser = async (
+  req: Request,
+  res: Response,
+) => {
   const userId = Number(req.user?.sub);
 
   await prisma.refreshToken.deleteMany({
@@ -144,7 +253,12 @@ const logoutUser = async (req: Request, res: Response) => {
   res.status(204).end();
 };
 
-const getMe = async (req: Request, res: Response) => {
+
+// GET ME
+const getMe = async (
+  req: Request,
+  res: Response,
+) => {
   const userId = Number(req.user?.sub);
 
   const user = await prisma.user.findUnique({
@@ -169,4 +283,11 @@ const getMe = async (req: Request, res: Response) => {
   res.status(200).json(user);
 };
 
-export { registerUser, loginUser, refreshUser, logoutUser, getMe };
+
+export {
+  registerUser,
+  loginUser,
+  refreshUser,
+  logoutUser,
+  getMe,
+};
