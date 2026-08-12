@@ -25,9 +25,8 @@ extendZodWithOpenApi(z);
 export const registry = new OpenAPIRegistry();
 
 
-// =============================
+
 // SECURITY
-// =============================
 
 registry.registerComponent("securitySchemes", "bearerAuth", {
   type: "http",
@@ -36,9 +35,8 @@ registry.registerComponent("securitySchemes", "bearerAuth", {
 });
 
 
-// =============================
+
 // COMMON SCHEMAS
-// =============================
 
 const userResponseSchema = z.object({
   id: z.number(),
@@ -102,14 +100,10 @@ const validationErrorSchema = z.object({
 });
 
 
-// ======================================================
 // AUTH
-// ======================================================
 
 
-// =============================
 // POST /auth/register
-// =============================
 
 registry.registerPath({
   method: "post",
@@ -166,9 +160,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // POST /auth/login
-// =============================
 
 registry.registerPath({
   method: "post",
@@ -225,9 +218,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // POST /auth/refresh
-// =============================
 
 registry.registerPath({
   method: "post",
@@ -284,9 +276,7 @@ registry.registerPath({
 });
 
 
-// =============================
 // POST /auth/logout
-// =============================
 
 registry.registerPath({
   method: "post",
@@ -323,9 +313,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // GET /auth/me
-// =============================
 
 registry.registerPath({
   method: "get",
@@ -378,14 +367,11 @@ registry.registerPath({
 });
 
 
-// ======================================================
+
 // ANNOUNCEMENTS
-// ======================================================
 
 
-// =============================
 // GET /announcements
-// =============================
 
 registry.registerPath({
   method: "get",
@@ -426,9 +412,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // GET /announcements/{id}
-// =============================
 
 registry.registerPath({
   method: "get",
@@ -476,9 +461,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // POST /announcements
-// =============================
 
 registry.registerPath({
   method: "post",
@@ -541,9 +525,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // PATCH /announcements/{id}
-// =============================
 
 registry.registerPath({
   method: "patch",
@@ -628,9 +611,8 @@ registry.registerPath({
 });
 
 
-// =============================
+
 // DELETE /announcements/{id}
-// =============================
 
 registry.registerPath({
   method: "delete",
@@ -701,9 +683,8 @@ registry.registerPath({
 });
 
 
-// ======================================================
+
 // GENERATE DOCUMENT
-// ======================================================
 
 export function generateOpenApiDocument() {
   const generator = new OpenApiGeneratorV3(
