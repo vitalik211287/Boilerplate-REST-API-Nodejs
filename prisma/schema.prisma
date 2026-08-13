@@ -18,6 +18,7 @@ model User {
   name          String
   createdAt     DateTime        @default(now())
 
+
   refreshTokens RefreshToken[]
   announcements Announcement[]
 }
@@ -30,13 +31,15 @@ model RefreshToken {
 }
 
 model Announcement {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  price       Float
-  category    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  title         String
+  description   String
+  price         Float
+  category      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  imageUrl      String?
+  imagePublicId String?
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
