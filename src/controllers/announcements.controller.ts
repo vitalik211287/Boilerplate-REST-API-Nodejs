@@ -88,6 +88,14 @@ export const getAnnouncementById = async (req: Request, res: Response) => {
 export const createAnnouncement = async (req: Request, res: Response) => {
   const userId = Number(req.user?.sub);
 
+  
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+   if (req.file) { 
+
+  }
+
   const announcement = await prisma.announcement.create({
     data: {
       ...req.body,

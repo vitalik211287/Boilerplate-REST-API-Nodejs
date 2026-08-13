@@ -5,6 +5,8 @@ import { validateBody } from "../middlewares/validateBody.ts";
 import { validateParams } from "../middlewares/validateParams.ts";
 import { validateQuery } from "../middlewares/validateQuery.ts";
 
+import  upload  from "../middlewares/upload.ts";
+
 import {
   getAllAnnouncements,
   getAnnouncementById,
@@ -40,6 +42,7 @@ announcementsRouter.get(
 announcementsRouter.post(
   "/",
   authenticate,
+  upload.single("image"),
   validateBody(createAnnouncementSchema),
   createAnnouncement,
 );
@@ -48,6 +51,7 @@ announcementsRouter.post(
 announcementsRouter.patch(
   "/:id",
   authenticate,
+  upload.single("image"),
   validateParams(announcementParamsSchema),
   validateBody(updateAnnouncementSchema),
   updateAnnouncement,
