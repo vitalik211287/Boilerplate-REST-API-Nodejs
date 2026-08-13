@@ -1,6 +1,13 @@
 import type { Request, Response } from "express";
 import prisma from "../../prisma/client.ts";
+import fs from "node:fs/promises";
+import { v2 as cloudinary } from "cloudinary";
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const getAllAnnouncements = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
@@ -88,18 +95,28 @@ export const getAnnouncementById = async (req: Request, res: Response) => {
 export const createAnnouncement = async (req: Request, res: Response) => {
   const userId = Number(req.user?.sub);
 
-  
   let imageUrl: string | undefined;
   let imagePublicId: string | undefined;
 
-   if (req.file) { 
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "announcements",
+      });
 
+      imageUrl = result.secure_url;
+      imagePublicId = result.public_id;
+    } finally {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
   }
 
   const announcement = await prisma.announcement.create({
     data: {
       ...req.body,
       userId,
+      imageUrl,
+      imagePublicId,
     },
 
     include: {
