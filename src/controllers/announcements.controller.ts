@@ -154,9 +154,38 @@ export const updateAnnouncement = async (req: Request, res: Response) => {
     });
   }
 
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "announcements",
+      });
+
+      imageUrl = result.secure_url;
+      imagePublicId = result.public_id;
+
+      if (announcement.imagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(announcement.imagePublicId);
+        } catch (error) {
+          return res.status(500).json({
+            error: "Failed to delete image",
+          });
+        }
+      }
+    } finally {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
+  }
+
   const updatedAnnouncement = await prisma.announcement.update({
     where: { id },
-    data: req.body,
+    data: {
+      ...req.body,
+      imageUrl,
+      imagePublicId,
+    },
 
     include: {
       user: {
@@ -191,6 +220,16 @@ export const deleteAnnouncement = async (req: Request, res: Response) => {
     return res.status(403).json({
       error: "Access denied",
     });
+  }
+
+  if (announcement.imagePublicId) {
+    try {
+      await cloudinary.uploader.destroy(announcement.imagePublicId);
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to delete image",
+      });
+    }
   }
 
   await prisma.announcement.delete({
