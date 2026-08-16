@@ -3,7 +3,7 @@ import prisma from "../../prisma/client.ts";
 import type { RegisterBody } from "../validators/auth.validators.ts";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import logger from "../logger.ts";
 
 // REGISTER
 const registerUser = async (
@@ -14,10 +14,7 @@ const registerUser = async (
 
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: [
-        { username },
-        { email },
-      ],
+      OR: [{ username }, { email }],
     },
   });
 
@@ -64,7 +61,10 @@ const registerUser = async (
       userId: newUser.id,
     },
   });
-
+  logger.info(
+    { userId: newUser.id, username: newUser.username },
+    "User registered",
+  );
   res.status(201).json({
     user: {
       id: newUser.id,
@@ -77,12 +77,8 @@ const registerUser = async (
   });
 };
 
-
 // LOGIN
-const loginUser = async (
-  req: Request,
-  res: Response,
-) => {
+const loginUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -97,10 +93,7 @@ const loginUser = async (
     });
   }
 
-  const passwordIsValid = await bcrypt.compare(
-    password,
-    user.password,
-  );
+  const passwordIsValid = await bcrypt.compare(password, user.password);
 
   if (!passwordIsValid) {
     return res.status(401).json({
@@ -143,6 +136,8 @@ const loginUser = async (
     },
   });
 
+  logger.info({ userId: user.id, username: user.username }, "User logged in");
+
   res.status(200).json({
     user: {
       id: user.id,
@@ -155,19 +150,12 @@ const loginUser = async (
   });
 };
 
-
 // REFRESH
-const refreshUser = async (
-  req: Request,
-  res: Response,
-) => {
+const refreshUser = async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
 
   try {
-    const payload = jwt.verify(
-      refreshToken,
-      process.env.JWT_SECRET!,
-    );
+    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET!);
 
     if (typeof payload === "string" || !payload.sub) {
       return res.status(401).json({
@@ -236,12 +224,8 @@ const refreshUser = async (
   }
 };
 
-
 // LOGOUT
-const logoutUser = async (
-  req: Request,
-  res: Response,
-) => {
+const logoutUser = async (req: Request, res: Response) => {
   const userId = Number(req.user?.sub);
 
   await prisma.refreshToken.deleteMany({
@@ -253,12 +237,8 @@ const logoutUser = async (
   res.status(204).end();
 };
 
-
 // GET ME
-const getMe = async (
-  req: Request,
-  res: Response,
-) => {
+const getMe = async (req: Request, res: Response) => {
   const userId = Number(req.user?.sub);
 
   const user = await prisma.user.findUnique({
@@ -283,11 +263,4 @@ const getMe = async (
   res.status(200).json(user);
 };
 
-
-export {
-  registerUser,
-  loginUser,
-  refreshUser,
-  logoutUser,
-  getMe,
-};
+export { registerUser, loginUser, refreshUser, logoutUser, getMe };

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import prisma from "../../prisma/client.ts";
 import fs from "node:fs/promises";
 import { v2 as cloudinary } from "cloudinary";
+import logger from "../logger.ts";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -106,6 +107,9 @@ export const createAnnouncement = async (req: Request, res: Response) => {
 
       imageUrl = result.secure_url;
       imagePublicId = result.public_id;
+
+      logger.info({ imagePublicId }, "Announcement image uploaded");
+
     } finally {
       await fs.unlink(req.file.path).catch(() => {});
     }
@@ -130,6 +134,11 @@ export const createAnnouncement = async (req: Request, res: Response) => {
       },
     },
   });
+
+  logger.info(
+    { announcementId: announcement.id, userId },
+    "Announcement created",
+  );
 
   res.status(201).json(announcement);
 };
@@ -179,25 +188,30 @@ export const updateAnnouncement = async (req: Request, res: Response) => {
     }
   }
 
-  const updatedAnnouncement = await prisma.announcement.update({
-    where: { id },
-    data: {
-      ...req.body,
-      imageUrl,
-      imagePublicId,
-    },
+  const data = {
+  ...req.body,
+  ...(req.file
+    ? {
+        imageUrl,
+        imagePublicId,
+      }
+    : {}),
+};
 
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          name: true,
-        },
+const updatedAnnouncement = await prisma.announcement.update({
+  where: { id },
+  data,
+  include: {
+    user: {
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        name: true,
       },
     },
-  });
+  },
+});
 
   res.status(200).json(updatedAnnouncement);
 };

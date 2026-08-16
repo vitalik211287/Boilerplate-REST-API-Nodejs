@@ -19,12 +19,9 @@ import {
   announcementsQuerySchema,
 } from "./validators/announcements.validators.ts";
 
-
 extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
-
-
 
 // SECURITY
 
@@ -33,8 +30,6 @@ registry.registerComponent("securitySchemes", "bearerAuth", {
   scheme: "bearer",
   bearerFormat: "JWT",
 });
-
-
 
 // COMMON SCHEMAS
 
@@ -45,24 +40,20 @@ const userResponseSchema = z.object({
   name: z.string(),
 });
 
-
 const userProfileSchema = userResponseSchema.extend({
   createdAt: z.string(),
 });
-
 
 const tokensSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
 });
 
-
 const authResponseSchema = z.object({
   user: userResponseSchema,
   accessToken: z.string(),
   refreshToken: z.string(),
 });
-
 
 const announcementResponseSchema = z.object({
   id: z.number(),
@@ -76,7 +67,6 @@ const announcementResponseSchema = z.object({
   user: userResponseSchema,
 });
 
-
 const announcementsListResponseSchema = z.object({
   data: z.array(announcementResponseSchema),
 
@@ -88,20 +78,16 @@ const announcementsListResponseSchema = z.object({
   }),
 });
 
-
 const errorSchema = z.object({
   error: z.string(),
 });
-
 
 const validationErrorSchema = z.object({
   error: z.string(),
   details: z.any().optional(),
 });
 
-
 // AUTH
-
 
 // POST /auth/register
 
@@ -159,8 +145,6 @@ registry.registerPath({
   },
 });
 
-
-
 // POST /auth/login
 
 registry.registerPath({
@@ -216,8 +200,6 @@ registry.registerPath({
     },
   },
 });
-
-
 
 // POST /auth/refresh
 
@@ -275,7 +257,6 @@ registry.registerPath({
   },
 });
 
-
 // POST /auth/logout
 
 registry.registerPath({
@@ -286,8 +267,7 @@ registry.registerPath({
 
   summary: "Logout user",
 
-  description:
-    "Deletes the current user's refresh token from the database.",
+  description: "Deletes the current user's refresh token from the database.",
 
   security: [
     {
@@ -312,8 +292,6 @@ registry.registerPath({
   },
 });
 
-
-
 // GET /auth/me
 
 registry.registerPath({
@@ -324,8 +302,7 @@ registry.registerPath({
 
   summary: "Get current user",
 
-  description:
-    "Returns information about the currently authenticated user.",
+  description: "Returns information about the currently authenticated user.",
 
   security: [
     {
@@ -366,10 +343,7 @@ registry.registerPath({
   },
 });
 
-
-
 // ANNOUNCEMENTS
-
 
 // GET /announcements
 
@@ -381,8 +355,7 @@ registry.registerPath({
 
   summary: "Get announcements",
 
-  description:
-    "Returns announcements with pagination, search and sorting.",
+  description: "Returns announcements with pagination, search and sorting.",
 
   request: {
     query: announcementsQuerySchema,
@@ -410,8 +383,6 @@ registry.registerPath({
     },
   },
 });
-
-
 
 // GET /announcements/{id}
 
@@ -460,9 +431,16 @@ registry.registerPath({
   },
 });
 
-
-
 // POST /announcements
+const createAnnouncementMultipartSchema = createAnnouncementSchema.extend({
+  image: z
+    .string()
+    .openapi({
+      type: "string",
+      format: "binary",
+    })
+    .optional(),
+});
 
 registry.registerPath({
   method: "post",
@@ -472,8 +450,7 @@ registry.registerPath({
 
   summary: "Create announcement",
 
-  description:
-    "Creates a new announcement for the authenticated user.",
+  description: "Creates a new announcement for the authenticated user.",
 
   security: [
     {
@@ -484,8 +461,8 @@ registry.registerPath({
   request: {
     body: {
       content: {
-        "application/json": {
-          schema: createAnnouncementSchema,
+        "multipart/form-data": {
+          schema: createAnnouncementMultipartSchema,
         },
       },
     },
@@ -524,9 +501,16 @@ registry.registerPath({
   },
 });
 
-
-
 // PATCH /announcements/{id}
+const updateAnnouncementMultipartSchema = updateAnnouncementSchema.extend({
+  image: z
+    .string()
+    .openapi({
+      type: "string",
+      format: "binary",
+    })
+    .optional(),
+});
 
 registry.registerPath({
   method: "patch",
@@ -536,8 +520,7 @@ registry.registerPath({
 
   summary: "Update announcement",
 
-  description:
-    "Updates an announcement owned by the authenticated user.",
+  description: "Updates an announcement owned by the authenticated user.",
 
   security: [
     {
@@ -550,8 +533,8 @@ registry.registerPath({
 
     body: {
       content: {
-        "application/json": {
-          schema: updateAnnouncementSchema,
+        "multipart/form-data": {
+          schema: updateAnnouncementMultipartSchema,
         },
       },
     },
@@ -610,8 +593,6 @@ registry.registerPath({
   },
 });
 
-
-
 // DELETE /announcements/{id}
 
 registry.registerPath({
@@ -622,8 +603,7 @@ registry.registerPath({
 
   summary: "Delete announcement",
 
-  description:
-    "Deletes an announcement owned by the authenticated user.",
+  description: "Deletes an announcement owned by the authenticated user.",
 
   security: [
     {
@@ -682,14 +662,10 @@ registry.registerPath({
   },
 });
 
-
-
 // GENERATE DOCUMENT
 
 export function generateOpenApiDocument() {
-  const generator = new OpenApiGeneratorV3(
-    registry.definitions,
-  );
+  const generator = new OpenApiGeneratorV3(registry.definitions);
 
   return generator.generateDocument({
     openapi: "3.0.0",
@@ -697,8 +673,7 @@ export function generateOpenApiDocument() {
     info: {
       title: "Announcements API",
       version: "1.0.0",
-      description:
-        "REST API for authentication and announcements management",
+      description: "REST API for authentication and announcements management",
     },
 
     servers: [
